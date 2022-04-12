@@ -11,8 +11,9 @@ def test_q_or_a_simple():
     assert p_type == 'Answer' and weight == 0
     question_nr, weight, text, p_type, fontsize = parse('a) !answer')
     assert p_type == 'Answer' and weight == 100
-    question_nr, weight, text, p_type, fontsize = parse('d)	!liturgieën een bredere werkelijkheid bestrijken '
-                                                        'dan de zeven sacramenten die door de Kerk erkend worden')
+    question_nr, weight, text, p_type, fontsize = \
+        parse('d)	!liturgieën een bredere werkelijkheid bestrijken '
+              'dan de zeven sacramenten die door de Kerk erkend worden')
     assert p_type == 'Answer' and weight == 100
 
 
@@ -25,8 +26,9 @@ def test_q_or_a_fontsize():
     assert p_type == 'Answer' and weight == 0 and fontsize == 24
     question_nr, weight, text, p_type, fontsize = parse('a) <font size="24">!haar zusters</font>')
     assert p_type == 'Answer' and weight == 100 and fontsize == 24
-    question_nr, weight, text, p_type, fontsize = parse('d)	!liturgieën een bredere werkelijkheid bestrijken '
-                                                        'dan de zeven sacramenten die door de Kerk erkend worden')
+    question_nr, weight, text, p_type, fontsize = \
+        parse('d)	!liturgieën een bredere werkelijkheid bestrijken '
+              'dan de zeven sacramenten die door de Kerk erkend worden')
     assert p_type == 'Answer' and weight == 100
 
 
