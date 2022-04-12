@@ -1,9 +1,9 @@
-from docx import Document  # package - python-docx !
+import re
+# from docx import Document  # package - python-docx !
 # import docx2python as d2p
 
-from xdocmodel import iter_paragraphs
+# from xdocmodel import iter_paragraphs
 import docx2python as d2p
-import re
 
 FULL_SCORE = 100
 NORMALIZE_FONTSIZE = True
