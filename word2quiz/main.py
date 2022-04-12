@@ -11,23 +11,24 @@ NORMALIZE_FONTSIZE = True
 # the patterns
 title_pattern = re.compile(r"^<font size=\"(?P<fontsize>\d+)\"><u>(?P<text>.*)")
 title_style_pattern = re.compile(r"^<span style=\"font-size:(?P<fontsize>[\dpt])+\"><u>(?P<text>.*)")
-# some fontsizei
+
 quiz_name_pattern = re.compile(r"^<font size=\"(?P<fontsize>\d+[^\"]+)\"><b>(?P<text>.*)\s*</b></font>")
 quiz_name_style_pattern = \
     re.compile(
         r"^<span style=\"font-size:(?P<fontsize>[\dpt]+)(;text-transform:uppercase)?\"><b>(?P<text>.*)\s*</b></span>")
 # special match Sam
-page_ref_style_pattern = re.compile(
-    r'(\(pp\.\s+[\d-]+)'
-)
+page_ref_style_pattern = re.compile(r'(\(pp\.\s+[\d-]+)')
+
 q_pattern_fontsize = re.compile(r'^(?P<id>\d+)[).]\s+<font size="(?P<fontsize>\d+)">(?P<text>.*)<\/font>')
 q_pattern = re.compile(r"^(?P<id>\d+)[).]\s+(?P<text>.*)")
+
 # '!' before the text of answer marks it as the right answer
-# idea use [\d+]  for partially correct answer The sum must be TOT_WEIGHT
+# idea: use [\d+]  for partially correct answer the sum must be FULL_SCORE
 a_ok_pattern_fontsize = re.compile(
     r'^(?P<id>[a-d])\)\s+<font size="(?P<fontsize>\d+)">.*(?P<fullscore>!)(?P<text>.*)<\/font>')
 a_ok_pattern = re.compile(r"^(?P<id>[a-d])\)\s+.*(?P<fullscore>!)(?P<text>.*)")
 # match a-d then ')' then skip whitespace and all chars up to '!' after answer skip </font>
+
 a_wrong_pattern_fontsize = re.compile(r'^(?P<id>[a-d])\)\s+<font size="(?P<fontsize>\d+)(?P<text>.*)<\/font>')
 a_wrong_pattern = re.compile(r"^(?P<id>[a-d])\)\s+(?P<text>.*)")
 
@@ -45,10 +46,6 @@ rules = [
     dict(name='wrong_answer', pattern=a_wrong_pattern, type='Answer'),
 
 ]
-
-
-# if text:
-#    return parse(text)
 
 
 def parse(text: str):
@@ -71,52 +68,6 @@ def parse(text: str):
             fontsize = int(match.group('fontsize')) if 'fontsize' in match.groupdict() else None
             print(' bingo!')
             return id_norm, score, text, rule['type'], fontsize
-    else:
-        return None, 0, "", 'Not recognized', None
-
-    q_match_fontsize = q_pattern_fontsize.match(text)
-    q_match = q_pattern.match(text)
-    a_ok_match_fontsize = a_ok_pattern_fontsize.match(text)
-    a_ok_match = a_ok_pattern.match(text)
-    a_wrong_match_fontsize = a_wrong_pattern_fontsize.match(text)
-    a_wrong_match = a_wrong_pattern.match(text)
-    title_match = title_pattern.match(text)
-    title_style_match = title_style_pattern.match(text)
-    page_ref_match = page_ref_style_pattern.match(text)
-    quiz_name_match = quiz_name_pattern.match(text)
-    quiz_name_style_match = quiz_name_style_pattern.match(text)
-
-    if q_match_fontsize:  # returns font size
-        id_str = q_match_fontsize.group('id')
-        id_norm = int(id_str) if id_str.isdigit() else id_str
-        text = q_match_fontsize.group('text').strip()
-        fontsize = int(q_match_fontsize.group('fontsize'))
-        return id_norm, 0, text, "Question", fontsize
-    elif q_match:
-        return int(q_match.group('id')), 0, q_match.group('text').strip(), "Question", None
-    elif a_ok_match_fontsize:
-        a_text = a_ok_match_fontsize.group('text')
-        fontsize = int(a_ok_match_fontsize.group('fontsize'))
-        return None, FULL_SCORE, a_text, "Answer", fontsize
-    elif a_ok_match:
-        a_text = a_ok_match.group(1)
-        return None, FULL_SCORE, a_text, "Answer", None
-    elif a_wrong_match_fontsize:
-        a_text = a_wrong_match_fontsize.group('text')
-        fontsize = int(a_wrong_match_fontsize.group('fontsize'))
-        return None, 0, a_text, "Answer", fontsize
-    elif a_wrong_match:
-        return None, 0, a_wrong_match.group('text'), "Answer", None
-    elif title_match:
-        return None, 0, title_match.group('text'), "Title", None
-    elif title_style_match:
-        return None, 0, title_style_match.group('text'), "Title", None
-    elif page_ref_match:
-        return None, 0, page_ref_match.group('text'), "Pageref", None
-    elif quiz_name_match:
-        return None, 0, quiz_name_match.group('text'), "Quizname", None
-    elif quiz_name_style_match:
-        return None, 0, quiz_name_style_match.group('text'), "Quizname", None
     else:
         return None, 0, "", 'Not recognized', None
 
