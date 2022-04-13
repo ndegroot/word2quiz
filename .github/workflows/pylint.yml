@@ -20,10 +20,6 @@ jobs:
         pip install pylint
     - name: Install poetry
       run: pipx install poetry
-    - uses: actions/setup-python@v3
-        with:
-          python-version: '3.9'
-          cache: 'poetry'
     - run: poetry install
     - name: Analysing the code with pylint
       run: |
