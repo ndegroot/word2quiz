@@ -17,5 +17,3 @@ jobs:
       run: pipx install poetry
     - run: poetry install
     - run: poetry run pytest
-    - name: Analysing the code with pylint
-      run: pylint $(git ls-files '*.py')
