@@ -5,7 +5,7 @@ description = ""
 authors = ["Nico de Groot <ndegroot0@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.9,^3.10"
+python = "ˆ3.8,^3.9,^3.10"
 python-docx = "^0.8.11"
 docx2python = "^2.0.4"
 
