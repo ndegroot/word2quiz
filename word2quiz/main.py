@@ -15,13 +15,14 @@ title_style_pattern = \
 
 quiz_name_pattern = \
     re.compile(r"^<font size=\"(?P<fontsize>\d+[^\"]+)\"><b>(?P<text>.*)\s*</b></font>")
-quiz_name_style_pattern = \
-    re.compile(
-        r"^<span style=\"font-size:(?P<fontsize>[\dpt]+)(;text-transform:uppercase)?\"><b>(?P<text>.*)\s*</b></span>")
+quiz_name_style_pattern = re.compile(
+        r"^<span style=\"font-size:(?P<fontsize>[\dpt]+)"
+        r"(;text-transform:uppercase)?\"><b>(?P<text>.*)\s*</b></span>")
 # special match Sam
 page_ref_style_pattern = re.compile(r'(\(pp\.\s+[\d-]+)')
 
-q_pattern_fontsize = re.compile(r'^(?P<id>\d+)[).]\s+<font size="(?P<fontsize>\d+)">(?P<text>.*)</font>')
+q_pattern_fontsize = re.compile(r'^(?P<id>\d+)[).]\s+'
+                                r'<font size="(?P<fontsize>\d+)">(?P<text>.*)</font>')
 q_pattern = re.compile(r"^(?P<id>\d+)[).]\s+(?P<text>.*)")
 
 # '!' before the text of answer marks it as the right answer
@@ -31,7 +32,8 @@ a_ok_pattern_fontsize = re.compile(
 a_ok_pattern = re.compile(r"^(?P<id>[a-d])\)\s+.*(?P<fullscore>!)(?P<text>.*)")
 # match a-d then ')' then skip whitespace and all chars up to '!' after answer skip </font>
 
-a_wrong_pattern_fontsize = re.compile(r'^(?P<id>[a-d])\)\s+<font size="(?P<fontsize>\d+)(?P<text>.*)</font>')
+a_wrong_pattern_fontsize = re.compile(r'^(?P<id>[a-d])\)\s+'
+                                      r'<font size="(?P<fontsize>\d+)(?P<text>.*)</font>')
 a_wrong_pattern = re.compile(r"^(?P<id>[a-d])\)\s+(?P<text>.*)")
 
 rules = [

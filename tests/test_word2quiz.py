@@ -3,6 +3,7 @@ from word2quiz.main import parse
 
 
 def test_q_or_a_simple():
+    """simple version no fonts size in Q & A"""
     src = r'<span style="font-size:32pt"><u>De titel</u>'
     qa_id, weight, text, p_type, fontsize = parse(src)
     assert qa_id in (None, "")
@@ -31,6 +32,7 @@ def test_q_or_a_simple():
 
 
 def test_q_or_a_fontsize():
+    """font size versions"""
     src = '61)	<font size="24">αἱ ἀδελφαὶ αὐτῆς </font>'
     question_nr, weight, text, p_type, fontsize = parse(src)
     assert question_nr == 61
