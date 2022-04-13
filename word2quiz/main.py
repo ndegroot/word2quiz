@@ -94,8 +94,9 @@ def parse_document_d2p(filename: str, check_num_questions: int):
     """
         :param  filename: filename of the Word docx to parse
         :param check_num_questions: number of questrions in a section
-        :return List[ Tuples[ quiz_names: str,questions: List[ question_name: str,
-                                                                  List[ Answers: Tuple[name, weight]]]"""
+        :return List[
+            Tuples[ quiz_names: str,questions: List[ question_name: str,
+                                                     List[ Answers: Tuple[name, weight]]]"""
     #  from docx produce a text with minimal HTML formatting tags b,i, font size
     #  1) questiontitle
     #    a) wrong answer
@@ -114,14 +115,14 @@ def parse_document_d2p(filename: str, check_num_questions: int):
     #       answers (4)
     # we save the question list into the result list when we detect new question 1
 
-    for p in d2p.iterators.iter_paragraphs(doc.body):
-        p = p.strip()
-        if not p:
+    for par in d2p.iterators.iter_paragraphs(doc.body):
+        par = par.strip()
+        if not par:
             continue
-        question_nr, weight, text, p_type, fontsize = parse(p)
-        print(f"{p} = {p_type} {weight}")
+        question_nr, weight, text, p_type, fontsize = parse(par)
+        print(f"{par} = {p_type} {weight}")
         if p_type == 'Not recognized':
-            not_recognized.append(p)
+            not_recognized.append(par)
             continue
 
         if p_type == 'Quizname':
@@ -138,7 +139,7 @@ def parse_document_d2p(filename: str, check_num_questions: int):
             # question_name: digits + first words ?
             if question_nr == 1:
                 print("New quiz is being parsed")
-                if section_nr > 0:  # after first section
+                if section_nr > 0:  # after first section add the quiz+questions
                     result.append((last_quiz_name, question_list))
                 question_list = []
                 section_nr += 1
@@ -149,7 +150,8 @@ def parse_document_d2p(filename: str, check_num_questions: int):
     # handle last section
     result.append((quiz_name, question_list))
     # should_be = 'Questions pertaining to the Introduction'
-    # assert result[0][0] == should_be, f"Error: is now \n{result[0][0]}<eol> should be \n{should_be}<eol>"
+    # assert result[0][0] == should_be,
+    # f"Error: is now \n{result[0][0]}<eol> should be \n{should_be}<eol>"
     for question_list in result:
         nr_questions = len(question_list[1])
         if check_num_questions:
@@ -157,7 +159,7 @@ def parse_document_d2p(filename: str, check_num_questions: int):
                 f"Questionlist {question_list[0]} has {nr_questions} " \
                 f"this should be {check_num_questions} questions"
         for questions in question_list[1]:
-            assert len(questions[1]) == 4, f"{questions[0]} has only {len(questions[1])} of 4 answers"
+            assert len(questions[1]) == 4, f"{questions[0]} only {len(questions[1])} of 4 answers"
             tot_weight = 0
             for ans in questions[1]:
                 tot_weight += ans.answer_weight

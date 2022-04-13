@@ -8,6 +8,7 @@ authors = ["Nico de Groot <ndegroot0@gmail.com>"]
 python = "^3.9"
 python-docx = "^0.8.11"
 docx2python = "^2.0.4"
+attrs = "^21.4.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
