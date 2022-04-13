@@ -1,4 +1,3 @@
-from word2quiz import __version__
 from word2quiz.main import parse
 
 
@@ -45,5 +44,5 @@ def test_q_or_a_fontsize():
     assert p_type == 'Answer' and weight == 100
 
 
-def test_version():
-    assert __version__ == '0.1.0'
+# def test_version():
+#     assert __version__ == '0.1.1'
