@@ -3,14 +3,13 @@ import re
 # import docx2python as d2p
 
 # from xdocmodel import iter_paragraphs
-import docx2python as d2p
 
 FULL_SCORE = 100
 NORMALIZE_FONTSIZE = True
 
 # the patterns
-title_pattern = re.compile(r"^<font size=\"(?P<fontsize>\d+)\"><u>(?P<text>.*)")
-title_style_pattern = re.compile(r"^<span style=\"font-size:(?P<fontsize>[\dpt])+\"><u>(?P<text>.*)")
+title_pattern = re.compile(r"^<font size=\"(?P<fontsize>\d+)\"><u>(?P<text>.*)</u></font>")
+title_style_pattern = re.compile(r"^<span style=\"font-size:(?P<fontsize>[\dpt]+)\"><u>(?P<text>.*)</u>")
 
 quiz_name_pattern = re.compile(r"^<font size=\"(?P<fontsize>\d+[^\"]+)\"><b>(?P<text>.*)\s*</b></font>")
 quiz_name_style_pattern = \
@@ -61,12 +60,12 @@ def parse(text: str):
             if rule['name'] in ('page_ref_style',):
                 # just skip it
                 continue
-            id_str = match.group('id')
+            id_str = match.group('id') if 'id' in match.groupdict() else ''
             id_norm = int(id_str) if id_str.isdigit() else id_str
             score = FULL_SCORE if 'fullscore' in match.groupdict() else 0
             text = match.group('text').strip()
-            fontsize = int(match.group('fontsize')) if 'fontsize' in match.groupdict() else None
-            print(' bingo!')
+            fontsize_str = match.group('fontsize') if 'fontsize' in match.groupdict() else None
+            fontsize = int(fontsize_str) if fontsize_str and fontsize_str.isdigit() else fontsize_str
             return id_norm, score, text, rule['type'], fontsize
     else:
         return None, 0, "", 'Not recognized', None

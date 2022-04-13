@@ -1,9 +1,22 @@
-import pytest
 from word2quiz import __version__
 from word2quiz.main import parse
 
 
 def test_q_or_a_simple():
+    src = r'<span style="font-size:32pt"><u>De titel</u>'
+    qa_id, weight, text, p_type, fontsize = parse(src)
+    assert qa_id in (None, "")
+    assert weight == 0
+    assert text == "De titel"
+    assert p_type == "Title"
+    assert fontsize == '32pt'
+
+    qa_id, weight, text, p_type, fontsize = parse('<font size="32"><u>De titel</u></font>')
+    assert qa_id in (None, "")
+    assert weight == 0
+    assert text == "De titel"
+    assert p_type == "Title"
+    assert fontsize == 32
     question_nr, weight, text, p_type, fontsize = parse('1) fdfdsfffsd')
     assert p_type == "Question"
     assert question_nr == 1
