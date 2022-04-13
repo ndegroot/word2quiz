@@ -1,3 +1,4 @@
+"""main module of word2quiz"""
 import re
 # from docx import Document  # package - python-docx !
 # import docx2python as d2p
@@ -9,26 +10,28 @@ NORMALIZE_FONTSIZE = True
 
 # the patterns
 title_pattern = re.compile(r"^<font size=\"(?P<fontsize>\d+)\"><u>(?P<text>.*)</u></font>")
-title_style_pattern = re.compile(r"^<span style=\"font-size:(?P<fontsize>[\dpt]+)\"><u>(?P<text>.*)</u>")
+title_style_pattern = \
+    re.compile(r"^<span style=\"font-size:(?P<fontsize>[\dpt]+)\"><u>(?P<text>.*)</u>")
 
-quiz_name_pattern = re.compile(r"^<font size=\"(?P<fontsize>\d+[^\"]+)\"><b>(?P<text>.*)\s*</b></font>")
+quiz_name_pattern = \
+    re.compile(r"^<font size=\"(?P<fontsize>\d+[^\"]+)\"><b>(?P<text>.*)\s*</b></font>")
 quiz_name_style_pattern = \
     re.compile(
         r"^<span style=\"font-size:(?P<fontsize>[\dpt]+)(;text-transform:uppercase)?\"><b>(?P<text>.*)\s*</b></span>")
 # special match Sam
 page_ref_style_pattern = re.compile(r'(\(pp\.\s+[\d-]+)')
 
-q_pattern_fontsize = re.compile(r'^(?P<id>\d+)[).]\s+<font size="(?P<fontsize>\d+)">(?P<text>.*)<\/font>')
+q_pattern_fontsize = re.compile(r'^(?P<id>\d+)[).]\s+<font size="(?P<fontsize>\d+)">(?P<text>.*)</font>')
 q_pattern = re.compile(r"^(?P<id>\d+)[).]\s+(?P<text>.*)")
 
 # '!' before the text of answer marks it as the right answer
 # idea: use [\d+]  for partially correct answer the sum must be FULL_SCORE
 a_ok_pattern_fontsize = re.compile(
-    r'^(?P<id>[a-d])\)\s+<font size="(?P<fontsize>\d+)">.*(?P<fullscore>!)(?P<text>.*)<\/font>')
+    r'^(?P<id>[a-d])\)\s+<font size="(?P<fontsize>\d+)">.*(?P<fullscore>!)(?P<text>.*)</font>')
 a_ok_pattern = re.compile(r"^(?P<id>[a-d])\)\s+.*(?P<fullscore>!)(?P<text>.*)")
 # match a-d then ')' then skip whitespace and all chars up to '!' after answer skip </font>
 
-a_wrong_pattern_fontsize = re.compile(r'^(?P<id>[a-d])\)\s+<font size="(?P<fontsize>\d+)(?P<text>.*)<\/font>')
+a_wrong_pattern_fontsize = re.compile(r'^(?P<id>[a-d])\)\s+<font size="(?P<fontsize>\d+)(?P<text>.*)</font>')
 a_wrong_pattern = re.compile(r"^(?P<id>[a-d])\)\s+(?P<text>.*)")
 
 rules = [
@@ -67,8 +70,8 @@ def parse(text: str):
             fontsize_str = match.group('fontsize') if 'fontsize' in match.groupdict() else None
             fontsize = int(fontsize_str) if fontsize_str and fontsize_str.isdigit() else fontsize_str
             return id_norm, score, text, rule['type'], fontsize
-    else:
-        return None, 0, "", 'Not recognized', None
+
+    return None, 0, "", 'Not recognized', None
 
 
 if __name__ == 'main':

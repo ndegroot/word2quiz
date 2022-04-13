@@ -1,3 +1,4 @@
+""" tests for word2quiz"""
 from word2quiz.main import parse
 
 
@@ -30,7 +31,8 @@ def test_q_or_a_simple():
 
 
 def test_q_or_a_fontsize():
-    question_nr, weight, text, p_type, fontsize = parse('61)	<font size="24">αἱ ἀδελφαὶ αὐτῆς </font>')
+    src = '61)	<font size="24">αἱ ἀδελφαὶ αὐτῆς </font>'
+    question_nr, weight, text, p_type, fontsize = parse(src)
     assert question_nr == 61
     assert text == 'αἱ ἀδελφαὶ αὐτῆς'
     assert p_type == "Question" and fontsize == 24

@@ -1,8 +1,5 @@
-import docx.document
-import docx.oxml.table
-import docx.oxml.text.paragraph
-import docx.table
-import docx.text.paragraph
+""" not used for now: easy recognizing the type of the lists  not solved"""
+import docx
 
 
 # noinspection PyProtectedMember
