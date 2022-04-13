@@ -11,7 +11,7 @@ import docx2python as d2p
 
 # from xdocmodel import iter_paragraphs
 @attrs.define
-class Answer:
+class Answer:  # pylint: disable=too-few-public-methods
     """canvas answer see for complete list of (valid) fields
     https://canvas.instructure.com/doc/api/quiz_questions.html#:~:text=An%20Answer-,object,-looks%20like%3A
     """
