@@ -69,8 +69,8 @@ def parse(text: str):
             id_norm = int(id_str) if id_str.isdigit() else id_str
             score = FULL_SCORE if 'fullscore' in match.groupdict() else 0
             text = match.group('text').strip()
-            fontsize_str = match.group('fontsize') if 'fontsize' in match.groupdict() else None
-            fontsize = int(fontsize_str) if fontsize_str and fontsize_str.isdigit() else fontsize_str
+            fs_str = match.group('fontsize') if 'fontsize' in match.groupdict() else None
+            fontsize = int(fs_str) if fs_str and fs_str.isdigit() else fs_str
             return id_norm, score, text, rule['type'], fontsize
 
     return None, 0, "", 'Not recognized', None
