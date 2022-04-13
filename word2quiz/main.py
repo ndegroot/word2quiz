@@ -108,6 +108,7 @@ def parse_document_d2p(filename: str, check_num_questions: int):
     quiz_name = None
     not_recognized = []
     result = []
+    answers = []
 
     #  the Word text contains one or more sections
     #  quiz_name (multiple)
@@ -130,13 +131,11 @@ def parse_document_d2p(filename: str, check_num_questions: int):
             quiz_name = text
         if last_p_type == 'Answer' and p_type in ('Question', 'Quizname'):  # last answer
             question_list.append((question_text, answers))
-        if last_p_type == 'Question' and p_type == 'Answer':  # first answer of new question
             answers = []
         if p_type == 'Answer':
             answers.append(Answer(answer_html=text, answer_weight=weight))
         if p_type == "Question":
             question_text = text
-            # question_name: digits + first words ?
             if question_nr == 1:
                 print("New quiz is being parsed")
                 if section_nr > 0:  # after first section add the quiz+questions
