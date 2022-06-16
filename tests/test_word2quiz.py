@@ -1,6 +1,7 @@
-""" tests for word2quiz"""
-from word2quiz.main import parse
-from word2quiz.main import normalize_size
+""" tests for word2quiz library"""
+from word2quiz import parse
+from word2quiz import normalize_size
+from word2quiz import get_document_html
 
 
 def test_q_or_a_simple():

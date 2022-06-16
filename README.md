@@ -1,6 +1,7 @@
-# word2quiz
-Create quizzes in Canvas from simple Word docx files uaing Canvasapi.
-A library to use in webapp, commandline or gui program. I will add the canvasapi part and make 
-it into a standalone tool
+# Word2Quiz
+Create quizzes in Canvas from simple Word docx files using
+[Canvasapi](https://canvasapi.readthedocs.io/en/stable/getting-started.html).
+A library to use in a webapp, commandline tool or gui program. 
+As an example a simple standalone commandline tool will be provided.
 
 

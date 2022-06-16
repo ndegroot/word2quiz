@@ -1,9 +1,10 @@
 from dataclasses import dataclass, field, asdict
 import logging
-from canvas_robot_model import get_api_data
 import canvasapi
 from rich.prompt import Prompt
 from rich.progress import track
+
+from .model import get_api_data, AC_YEAR
 
 
 @dataclass
@@ -48,8 +49,35 @@ class CanvasRobot(object):
     # ----------------------------------------
 
     def get_course(self, course_id: int):
-        """"":returns canvas course by its id"""
+        """"
+        :param course_id:
+        :returns canvas course with this course_id
+        """
         return self.canvas.get_course(course_id)
+
+    def get_courses(self, enrollment_type: str = "teacher"):
+        """"
+        :enrollment_type 'teacher'(default), 'student','ta', 'observer' 'designer'
+        :returns canvas courses for current user in role"""
+        return self.canvas.get_courses(enrollment_type=enrollment_type)
+
+    def get_courses_in_account(self, account_id: int, by_teachers: list, this_year=True):
+        """get all course in account here use_is has the role/type [enrollment_type]
+        :param account_id: admin account id
+        :param by_teachers: list of teacher id's
+        :param this_year: True=filter courses to include only the current year
+        :returns list of courses
+        """
+        account = self.canvas.get_account(account_id)
+        courses = []
+        for course in account.get_courses(by_teachers=by_teachers):
+            # only show/insert/update course if current year
+
+            if this_year and (str(course.sis_course_id)[:4] != str(AC_YEAR)
+                              or course.name.endswith('conclude')):
+                continue
+            courses.append(course)
+        return courses
 
     def get_user(self, user_id: int):
         """get user using
@@ -63,7 +91,7 @@ class CanvasRobot(object):
         :param course_id:
         :param title:
         :param quiz_type:
-        :return: msg, quiz_id
+        :returns: tuple of msg, quiz_id
         """
         course: Course = self.get_course(course_id)
         quiz = course.create_quiz(dict(title=title, quiz_type=quiz_type))

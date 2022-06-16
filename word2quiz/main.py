@@ -8,326 +8,32 @@ import glob
 import logging
 from dataclasses import dataclass
 import gettext
-import tkinter as tk
-import customtkinter as ctk
-from tkhtmlview import HTMLLabel
-
-from tkinter import filedialog
-from tkinter.filedialog import askopenfilename, asksaveasfile
 
 from lxml import etree
-from rich.console import Console
-from rich.pretty import pprint
-from rich.prompt import Prompt
 import docx2python as d2p
+from rich.console import Console
 
-from canvas_robot import CanvasRobot, Answer
+from canvasrobot import CanvasRobot, Answer
 
-GUI = True
 
 _ = gettext.gettext
 console = Console(force_terminal=True)  # too trick Pycharm console into show textattributes
 cur_dir = os.getcwd()
 
 
-class InterActiveButton(tk.Button):
-    """
-    This button expands when the user hovers over it and shrinks when
-    the cursor leaves the button.
-
-    If you want the button to expand in both directions just use:
-        button = InterActiveButton(root, text="Button", width=200, height=50)
-        button.pack()
-    If you want the button to only expand to the right use:
-        button = InterActiveButton(root, text="Button", width=200, height=50)
-        button.pack(anchor="w")
-
-    This button should work with all geometry managers.
-    """
-
-    def __init__(self, master, max_expansion: int = 12, bg="dark blue",
-                 fg="#dad122", **kwargs):
-        # Save some variables for later:
-        self.max_expansion = max_expansion
-        self.bg = bg
-        self.fg = fg
-
-        # To use the button's width in pixels:
-        # From here: https://stackoverflow.com/a/46286221/11106801
-        self.pixel = tk.PhotoImage(width=1, height=1)
-
-        # The default button arguments:
-        button_args = dict(cursor="hand2", bd=0, font=("arial", 18, "bold"),
-                           height=50, compound="c", activebackground=bg,
-                           image=self.pixel, activeforeground=fg)
-        button_args.update(kwargs)
-        super().__init__(master, bg=bg, fg=fg, **button_args)
-
-        # Bind to the cursor entering and exiting the button:
-        super().bind("<Enter>", self.on_hover)
-        super().bind("<Leave>", self.on_leave)
-
-        # Save some variables for later:
-        self.base_width = button_args.pop("width", 200)
-        self.width = self.base_width
-        # `self.mode` can be "increasing"/"decreasing"/None only
-        # It stops a bug where if the user wuickly hovers over the button
-        # it doesn't go back to normal
-        self.mode = None
-
-    def increase_width(self) -> None:
-        if self.width <= self.base_width + self.max_expansion:
-            if self.mode == "increasing":
-                self.width += 1
-                super().config(width=self.width)
-                super().after(5, self.increase_width)
-
-    def decrease_width(self) -> None:
-        if self.width > self.base_width:
-            if self.mode == "decreasing":
-                self.width -= 1
-                super().config(width=self.width)
-                super().after(5, self.decrease_width)
-
-    def on_hover(self, event: tk.Event = None) -> None:
-        # Improvement: use integers instead of "increasing" and "decreasing"
-        self.mode = "increasing"
-        # Swap the `bg` and the `fg` of the button
-        super().config(bg=self.fg, fg=self.bg)
-        super().after(5, self.increase_width)
-
-    def on_leave(self, event: tk.Event = None) -> None:
-        # Improvement: use integers instead of "increasing" and "decreasing"
-        self.mode = "decreasing"
-        # Reset the `fg` and `bg` of the button
-        super().config(bg=self.bg, fg=self.fg)
-        super().after(5, self.decrease_width)
-
-
-class Word2Quiz(ctk.CTkFrame):
-
-    def __init__(self):
-        super().__init__()
-
-        self.tkvar_font_normalize = None
-        self.cb_font_normalize = None
-        self.html_lbl_docsample = None
-        self.btn_convert2data = None
-        self.data_dict = None
-        self.lbl_quiz_data = None
-        self.entry_file_name = None
-        self.background_image = None
-        self.background_image_label = None
-
-    def init_ui(self):
-        """
-        ---------------------------------------------
-                [filename]            box text docx
-
-                         [ Open file]
-        ---------------------------------------------
-
-            #question [dropbox]
-                                     box parsed data
-            [v] check box testrun
-
-                        [ Convert ]
-        ---------------------------------------------
-
-            course_id [ input ]
-
-                                    browserbox/link
-
-                        [ Create quiz]
-        ---------------------------------------------
-
-        :return:
-        """
-
-        self.master.title("Word to Canvasquiz Converter")  # that's the tk root
-        self.pack(fill="both", expand=True)
-
-        # img_filepath = os.path.abspath(os.path.join(os.pardir, "data", "witraster.png"))
-        # assert os.path.exists(img_filepath)
-
-        # self.background_image = tk.PhotoImage(file=img_filepath)
-        # self.background_image_label = tk.Label(self, image=self.background_image)
-        # self.background_image_label.place(x=0, y=0)
-
-        # self.canvas = tk.Canvas(self, width=500, height=700,
-        #                        background='white',
-        #                        highlightthickness=0,
-        #                        borderwidth=0)
-        # self.canvas.place(x=50, y=60)
-        try:
-            self.master.wm_iconbitmap("../data/word2quiz.ico")
-        except FileNotFoundError:
-            print('icon file is not available')
-            pass
-        file = ""
-        default_text = ("Your extracted quizdata will "
-                        "appear here.\n\n please check the data")
-
-        # the frames
-        file_frame = ctk.CTkFrame(self)
-        file_frame.pack(fill=tk.X)
-        data_frame = ctk.CTkFrame(self)
-        data_frame.pack(fill=tk.X)
-        canvas_frame = ctk.CTkFrame(self)
-        canvas_frame.pack(fill=tk.X)
-
-        # File_frame Input: button Output: filename label, box with sample
-        btn_open_file = ctk.CTkButton(file_frame,
-                                      text=" Open ",
-                                      width=30,
-                                      corner_radius=8,
-                                      command=self.open_word_file)
-        btn_open_file.pack(side="bottom", padx=5, pady=5)
-        # # Select word file
-        lbl_file = ctk.CTkLabel(file_frame,
-                                width=120,
-                                height=25,
-                                text="Select docx file",
-                                text_font=("Arial", 20)
-                                )
-        lbl_file.pack(side="top", pady=5)
-
-        self.entry_file_name = ctk.CTkEntry(file_frame,
-                                            placeholder_text="no file selected",
-                                            width=200,
-                                            height=25,
-                                            border_width=2,
-                                            corner_radius=10)
-        self.entry_file_name.pack(side="top", pady=5, padx=5)
-
-        # # Select word file
-        lbl_font_normalize = ctk.CTkLabel(file_frame,
-                                          width=80,
-                                          height=25,
-                                          text="Normalize fontsize?",
-                                          text_font=("Arial", 12)
-                                          )
-        lbl_font_normalize.pack(side="left", pady=5)
-
-        # Create a Tkinter variable
-        tkvar_font_normalize = tk.StringVar(self.master)
-
-        # Dictionary with options
-        choices = {'no change', '12', '14', '16'}
-        self.tkvar_font_normalize = tkvar_font_normalize
-        self.tkvar_font_normalize.set('no change')  # set the default option
-        self.cb_font_normalize = tk.OptionMenu(file_frame, self.tkvar_font_normalize, *choices, )
-        self.cb_font_normalize.config(width=10)
-
-        # link function to change dropdown
-        self.tkvar_font_normalize.trace('w', self.on_change_cb_normalize_fontsize)
-
-        self.cb_font_normalize.pack(side="left", pady=5)
-
-        self.html_lbl_docsample = HTMLLabel(file_frame,
-                                            # width=100,
-                                            html="""
-            <p><i>no content yet</i></p>
-            """)
-
-        self.html_lbl_docsample.pack(side="right", pady=20, padx=20)
-
-        # data_frame Inputs: num questions, testrun Output: box quizdata
-        self.btn_convert2data = ctk.CTkButton(data_frame,
-                                              text="Convert",
-                                              width=30,
-                                              command=self.show_quizdata,
-                                              state=tk.DISABLED)
-        self.btn_convert2data.pack(side="bottom", padx=5, pady=5)
-
-        #  ======================= Box to show quizdata
-        self.lbl_quiz_data = ctk.CTkLabel(data_frame,
-                                          width=350,
-                                          height=120,
-                                          )
-        self.lbl_quiz_data.configure(text=default_text)
-        self.lbl_quiz_data.pack(side="right", padx=20, pady=80)
-
-        # ===============================Button to access save2word method=================
-        # save2canvas = Button(root, text="Save to Word File", font=('arial', 10, 'bold'),
-        #                      bg="RED", fg='WHITE', command=save2canvas)
-        # save2canvas.place(x=255, y=320)
-
-        # button = InterActiveButton(self,
-        #                           text="Button",
-        #                           width=200,
-        #                           height=50)
-        # Using `anchor="w"` forces the button to expand to the right.
-        # If it's removed, the button will expand in both directions
-        # button.pack(padx=20, pady=20, anchor="w")
-
-    def on_change_cb_normalize_fontsize(self, *args):
-        print(self.tkvar_font_normalize.get())
-
-    def open_word_file(self):
-        f = askopenfilename(defaultextension=".docx",
-                            filetypes=[("Word docx", "*.docx")])
-        if f == "":
-            f = None
-        else:
-            self.entry_file_name.delete(0, tk.END)
-            self.entry_file_name.config(fg="blue")
-            self.entry_file_name.insert(0, f)
-
-        normalize = self.tkvar_font_normalize.get()
-        normalize = int(normalize) if normalize.isdigit() else 0
-        par_list, not_recognized_list = get_document_html(filename=f,
-                                                          normalized_fontsize=normalize)
-        tot_html = ''
-        for p_type, ans_weight, text, html in par_list:
-            tot_html += f'<p style="color: green">{p_type} {html}</p>' \
-                if ans_weight else f"<p>{p_type} {html}</p>"
-        if not_recognized_list:
-            html += "<hr><p>Not recognized:</p>"
-            for _, _, html in not_recognized_list:
-                tot_html += html
-        self.html_lbl_docsample.set_html(tot_html)
-        # enable next step
-
-        self.btn_convert2data.configure(state=tk.NORMAL)
-
-    def show_quizdata(self):
-        """
-        put quiz_dat in textbox as text
-        :return:
-        """
-        normalize = self.tkvar_font_normalize.get()
-        normalize = int(normalize) if normalize.isdigit() else 0
-        self.data_dict = parse_document_d2p(filename=f,
-                                            check_num_questions=self.check_num_questions,
-                                            normalize_fontsize=normalize)
-        self.lbl_quiz_data.delete(1.0, END)
-        data_text = pprint.pformat(self.data_dict)
-        self.lbl_quiz_data.insert(INSERT, data_text)
-
-    def save2canvas(self):
-        """
-        Create the quiz in Canvas using ghe quizdata
-        :return: not used"
-        """
-        canvasrobot = CanvasRobot()
-        stats, canvasrobot.create_quizzes_from_data(course_id=course_id,
-                                                    data=self.quiz_data)
-
-
 # define Python user-defined exceptions
 class Error(Exception):
-    """Base class for other exceptions"""
+    """ Base class for other exceptions"""
     pass
 
 
 class IncorrectNumberofQuestions(Error):
-    """ quiz contains unexpected number of questions"""
+    """ the quiz contains unexpected number of questions"""
     pass
 
 
 class IncorrectAnswerMarking(Error):
-    """ the aswers of a particular question should have
+    """ the answers of a particular question should have
         only one good (!) marking (or total of 100 points) """
     pass
 
@@ -463,16 +169,67 @@ def get_document_html(filename: str, normalized_fontsize: int = 0):
     return par_list, not_recognized
 
 
+def get_document_html_old(filename: str, normalized_fontsize: int = 0):
+    """
+        :param normalized_fontsize: 0 is no normalization
+        :param  filename: filename of the Word docx to parse
+        :returns the first X paragraphs as HTML
+    """
+    #  from docx produce a text with minimal HTML formatting tags b,i, font size
+    #  1) questiontitle
+    #    a) wrong answer
+    #    b) !right answer
+    doc = d2p.docx2python(filename, html=True)
+    # print(doc.body)
+    section_nr = 0  # state machine
+
+    #  the Word text contains one or more sections
+    #  quiz_name (multiple)
+    #    questions (5) starting with number 1
+    #       answers (4)
+    # we save the question list into the result list when we detect new question 1
+    last_p_type = None
+    par_list = []
+    not_recognized = []
+    # stop after the first question
+    for par in d2p.iterators.iter_paragraphs(doc.body):
+        par = par.strip()
+        if not par:
+            continue
+        question_nr, weight, text, p_type = parse(par, normalized_fontsize)
+        print(f"{par} = {p_type} {weight}")
+        if p_type == 'Not recognized':
+            not_recognized.append(par)
+            continue
+
+        if p_type == 'Quizname':
+            quiz_name = text
+            par_list.append((p_type, None, text, par))
+        if last_p_type == 'Answer' and p_type in ('Question', 'Quizname'):  # last answer
+            break
+        if p_type == 'Answer':
+            # answers.append(Answer(answer_html=text, answer_weight=weight))
+            par_list.append((p_type, weight, text, par))
+        if p_type == "Question":
+            par_list.append((p_type, None, text, par))
+
+        last_p_type = p_type
+
+    return par_list, not_recognized
+
+
 def parse(text: str, normalized_fontsize: int = 0):
     """
+    Parse a line of (limited: tags B,I) html text (paragraph) determine the type, number (question,answer)
+    and score(if answer) using a list of rules. Optinally change the fontsize of
+    question and answers
     :param text : text to parse
     :param normalized_fontsize: if non-zero change fontsizes in q & a
-    :return determine the type and parsed values of a string by matching a ruleset and returning a
-    tuple:
-    - question number/answer: int/char,
-    - score :int (if answer),
-    - text: str,
-    - type: str. One of ('Question','Answer', 'Title, 'Pageref', 'Quizname') or 'Not recognized'
+    :return tuple:
+        - question number/answer: int/char,
+        - score :int (if answer),
+        - text :str,
+        - type :str. One of ('Question','Answer', 'Title, 'Pageref', 'Quizname') or 'Not recognized'
     """
 
     def is_qa(rule):
@@ -496,18 +253,23 @@ def parse(text: str, normalized_fontsize: int = 0):
     return None, 0, "", 'Not recognized'
 
 
-def parse_document_d2p(filename: str, check_num_questions: int, normalize_fontsize=False):
-    """
+def parse_document_d2p(filename: str, check_num_questions: int, normalize_fontsize=0):
+    """ Parse the docx file, while checking number of questions and optionally normalize fontsize
+        of the questions and answers (the fields in Canvas with HTML formatted texts)
         :param  filename: filename of the Word docx to parse
-        :param check_num_questions: number of questrions in a section
-        :param normalize_fontsize: if True change fontsizes
-        :returns a list of Tuples[
-        - quiz_names: str
-        - questions: List[
-            - question_name: str,
-            - List[ Answers: list of Tuple[name:str, weight:int]]]"""
+        :param check_num_questions: number of questions in a section
+        :param normalize_fontsize: if > 0 change fontsizes Q&A
+        :returns Tuple of [
+          quiz_data: a List of Tuples[
+            - quiz_names: str
+            - questions: List[
+                - question_name: str,
+                - List[ Answers: List of Tuple[
+                    name:str,
+                    weight:int]]],
+          not_recognized: List of not recognized lines]"""
     #  from docx produce a text with minimal HTML formatting tags b,i, font size
-    #  1) questiontitle
+    #  1) question title
     #    a) wrong answer
     #    b) !right answer
     doc = d2p.docx2python(filename, html=True)
@@ -530,7 +292,7 @@ def parse_document_d2p(filename: str, check_num_questions: int, normalize_fontsi
         if not par:
             continue
         question_nr, weight, text, p_type = parse(par, normalize_fontsize)
-        print(f"{par} = {p_type} {weight}")
+        logging.debug(f"{par} = {p_type} {weight}")
         if p_type == 'Not recognized':
             not_recognized.append(par)
             continue
@@ -546,7 +308,7 @@ def parse_document_d2p(filename: str, check_num_questions: int, normalize_fontsi
         if p_type == "Question":
             question_text = text
             if question_nr == 1:
-                print("New quiz is being parsed")
+                logging.debug("New quiz is being parsed")
                 if section_nr > 0:  # after first section add the quiz+questions
                     result.append((last_quiz_name, question_list))
                 question_list = []
@@ -557,9 +319,6 @@ def parse_document_d2p(filename: str, check_num_questions: int, normalize_fontsi
     question_list.append((question_text, answers))
     # handle last section
     result.append((quiz_name, question_list))
-    # should_be = 'Questions pertaining to the Introduction'
-    # assert result[0][0] == should_be,
-    # f"Error: is now \n{result[0][0]}<eol> should be \n{should_be}<eol>"
     for question_list in result:
         nr_questions = len(question_list[1])
         if check_num_questions:
@@ -576,11 +335,12 @@ def parse_document_d2p(filename: str, check_num_questions: int, normalize_fontsi
                 raise IncorrectAnswerMarking(f"Check right/wrong marking and weights in "
                                              f"Q '{questions[0]}'\n Ans {questions[1]}")
 
-    print('--- not recognized --' if not_recognized else '--- all lines were recognized ---')
+    logging.debug('--- not recognized:' if not_recognized else
+                  '--- all lines were recognized ---')
     for line in not_recognized:
-        print(line)
+        logging.debug(line)
 
-    return result
+    return result, not_recognized
 
 
 def word2quiz(filename: str,
@@ -592,49 +352,24 @@ def word2quiz(filename: str,
     """
     os.chdir('../data')
     logging.debug(f"We are in folder {os.getcwd()}")
-    quiz_data = parse_document_d2p(filename=filename,
-                                   check_num_questions=check_num_questions,
-                                   normalize_fontsize=normalize_fontsize)
+    quiz_data, not_recognized_lines = parse_document_d2p(filename=filename,
+                                                         check_num_questions=check_num_questions,
+                                                         normalize_fontsize=normalize_fontsize)
     if testrun:
         return quiz_data
     canvasrobot = CanvasRobot()
-    stats, canvasrobot.create_quizzes_from_data(course_id=course_id,
-                                                data=quiz_data)
+    result, stats = canvasrobot.create_quizzes_from_data(course_id=course_id,
+                                                         data=quiz_data)
 
     return stats
 
 
-if __name__ == '__main__':
-    level = logging.DEBUG  # global loggig level, affects canvasapi too
-    logging.basicConfig(filename=f'word2quiz.log', encoding='utf-8', level=level)
-    # os.environ['LANGUAGE'] = 'en'
-    if GUI:
-        ctk.set_appearance_mode("Light")  # Modes: system (default/Mac), light, dark
-        ctk.set_default_color_theme("blue")  # Themes: blue (default), dark-blue, green
-        root = ctk.CTk()
-        root.geometry("600x800")
-        root.resizable(False, False)
-
-        app = Word2Quiz()
-        app.init_ui()
-
-        root.mainloop()
-        exit()
-
-    # CMD bversion
-    lc = gettext.find('base', 'locales')
-    logging.debug(f"locales: {lc}")
-    files = glob.glob('../data/*.docx')
-    filename = Prompt.ask(_("Enter filename"), choices=files, show_choices=True)
-    with console.status(_("Working..."), spinner="dots"):
-        try:
-            result = word2quiz(filename,
-                               course_id=34,
-                               check_num_questions=6,
-                               testrun=False)
-        except FileNotFoundError as e:
-            console.print(f'\n[bold red]Error:[/] {e}')
-        except (IncorrectNumberofQuestions, IncorrectAnswerMarking) as e:
-            console.print(f'\n[bold red]Error:[/] {e}')
-        else:
-            pprint(result)
+if __name__ == "__main__":
+    ADMIN = 6
+    A_TEACHER = 8
+    cr = CanvasRobot()
+    courses = cr.get_courses_in_account(ADMIN, [8], this_year=False)
+    user = cr.get_user(8)
+    for course in cr.get_courses(enrollment_type="teacher"):
+        print(f"{course.id} {course.name}")
+    print(f"{len(courses)} courses for {user} as teacher")

@@ -13,12 +13,14 @@ from tkinter import simpledialog
 print(keyring.get_keyring())
 # keyring.backends.SecretService.Keyring (priority: 5)
 
-NAMESPACE = f"{__name__}"
+NAMESPACE = "canvasrobot"  # f"{__name__}"
 ENTRY = "API_KEY"
 URL = "URL"
 
 
 def get_api_data(app_window=False):
+    """ ask for canvas username and api key, uses keyring to
+    store them in a safe space"""
 
     key = keyring.get_password(NAMESPACE, ENTRY)
     if key is None:
@@ -30,7 +32,7 @@ def get_api_data(app_window=False):
         keyring.set_password(NAMESPACE, ENTRY, key)
 
     url = keyring.get_password(NAMESPACE, URL)
-    if url is None:
+    if url in (None, ""):
         msg = "Enter your Canvas URL (like https://tilburguniversity.instructure.com)"
         url = simpledialog.askstring("Input",
                                      msg,

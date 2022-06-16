@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "word2quiz"
-version = "0.1.9"
+version = "0.1.12"
 description = "Create quizzes in Canvas from simple Word docx files uaing Canvasapi. Not complete yet."
 authors = ["Nico de Groot <ndegroot0@gmail.com>"]
 readme = "README.md"
@@ -17,7 +17,9 @@ docx2python = "^2.0.4"
 attrs = "^21.4.0"
 requests = "^2.27.1"
 Pillow = "^9.1.0"
-tkhtmlview = {path = "data/tkhtmlview-0.1.0.post1-py3-none-any.whl"}
+canvasapi = "^2.2.0"
+keyring = "^23.6.0"
+rich = "^12.4.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
