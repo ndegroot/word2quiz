@@ -4,7 +4,7 @@ import canvasapi
 from rich.prompt import Prompt
 from rich.progress import track
 
-from .model import get_api_data, AC_YEAR
+from .model import get_api_data, reset_api_data, start_month, AC_YEAR
 
 
 @dataclass
@@ -42,10 +42,29 @@ class Stats:
 
 
 class CanvasRobot(object):
+    account = None
 
-    def __init__(self):
-        url, key = get_api_data()
-        self.canvas = canvasapi.Canvas(url, key)
+    def __init__(self, account_id=0):
+        def login():
+            url, key = get_api_data()
+            # key = key + 'g'  # force wrong key
+            self.canvas = canvasapi.Canvas(url, key)
+            self.account = self.canvas.get_account(account_id) if account_id else None
+            self.current_user = self.canvas.get_current_user()
+        try:
+            # try again one more time
+            login()
+        except canvasapi.exceptions.InvalidAccessToken:
+            logging.debug(f"Invalid Access token")
+            reset_api_data()
+            try:
+                login()  # retry once
+            except canvasapi.exceptions.InvalidAccessToken:
+                logging.debug(f"Invalid Access token on second try")
+                raise
+        except Exception as e:
+            logging.error(f"{e}")
+            quit()
     # ----------------------------------------
 
     def get_course(self, course_id: int):
@@ -61,16 +80,15 @@ class CanvasRobot(object):
         :returns canvas courses for current user in role"""
         return self.canvas.get_courses(enrollment_type=enrollment_type)
 
-    def get_courses_in_account(self, account_id: int, by_teachers: list, this_year=True):
+    def get_courses_in_account(self, by_teachers: list, this_year=True):
         """get all course in account here use_is has the role/type [enrollment_type]
-        :param account_id: admin account id
         :param by_teachers: list of teacher id's
         :param this_year: True=filter courses to include only the current year
         :returns list of courses
         """
-        account = self.canvas.get_account(account_id)
+        assert self.account, "No (sub) admin account provided"
         courses = []
-        for course in account.get_courses(by_teachers=by_teachers):
+        for course in self.account.get_courses(by_teachers=by_teachers):
             # only show/insert/update course if current year
 
             if this_year and (str(course.sis_course_id)[:4] != str(AC_YEAR)

@@ -8,13 +8,16 @@ import glob
 import logging
 from dataclasses import dataclass
 import gettext
-
 from lxml import etree
 import docx2python as d2p
+
 from rich.console import Console
+from rich.prompt import Prompt, IntPrompt
+from rich.table import Table
 
-from canvasrobot import CanvasRobot, Answer
+import canvasrobot
 
+canvasrobot.model.start_month = 9  # change start month academic year
 
 _ = gettext.gettext
 console = Console(force_terminal=True)  # too trick Pycharm console into show textattributes
@@ -304,7 +307,7 @@ def parse_document_d2p(filename: str, check_num_questions: int, normalize_fontsi
             question_list.append((question_text, answers))
             answers = []
         if p_type == 'Answer':
-            answers.append(Answer(answer_html=text, answer_weight=weight))
+            answers.append(canvasrobot.Answer(answer_html=text, answer_weight=weight))
         if p_type == "Question":
             question_text = text
             if question_nr == 1:
@@ -356,20 +359,66 @@ def word2quiz(filename: str,
                                                          check_num_questions=check_num_questions,
                                                          normalize_fontsize=normalize_fontsize)
     if testrun:
-        return quiz_data
-    canvasrobot = CanvasRobot()
+        return quiz_data, not_recognized_lines
+
+    if len(not_recognized_lines) > 0:
+        return quiz_data, not_recognized_lines
+    canvasrobot = canvasrobot.CanvasRobot()
     result, stats = canvasrobot.create_quizzes_from_data(course_id=course_id,
                                                          data=quiz_data)
 
     return stats
 
 
+def word2quiz_cmd(docx_path="../data/"):
+    console = Console(force_terminal=True)  # to trick Pycharm console into showing textattributes
+
+    cr = canvasrobot.CanvasRobot()
+    print(f"Logged in as {cr.current_user.name}")
+
+    courses = list(cr.get_courses(enrollment_type="teacher"))
+    courses_ta = list(cr.get_courses(enrollment_type="ta"))
+
+    courses += courses_ta
+
+    #for course in courses:
+    #    print(f"{course.id} - {course.name}")
+
+    table = Table(title="You're teaching or assisting in the following courses")
+
+    table.add_column("Course Id", justify="right", style="cyan", no_wrap=True)
+    table.add_column("Title", style="magenta")
+    for course in courses:
+        table.add_row(str(course.id), course.name)
+
+    console.print(table)
+
+    course_ids = [str(c.id) for c in courses]
+    course_id = int(Prompt.ask(_("Enter your course_id"),
+                               choices=course_ids,
+                               show_choices=True))
+
+    os.chdir(docx_path)
+    filenames = glob.glob(f'*.docx')
+    filename = Prompt.ask(_("Enter filename"),
+                          choices=filenames,
+                          show_choices=True)
+
+    num_questions = IntPrompt.ask("How many questions are in your Word file")
+
+    with console.status(_("Working..."), spinner="dots"):
+        try:
+            result = word2quiz(filename,
+                               course_id=course_id,
+                               check_num_questions=num_questions,
+                               testrun=False)
+        except FileNotFoundError as e:
+            console.print(f'\n[bold red]Error:[/] {e}')
+        except (IncorrectNumberofQuestions, IncorrectAnswerMarking) as e:
+            console.print(f'\n[bold red]Error:[/] {e}')
+        else:
+            rich_pprint(result)
+
+
 if __name__ == "__main__":
-    ADMIN = 6
-    A_TEACHER = 8
-    cr = CanvasRobot()
-    courses = cr.get_courses_in_account(ADMIN, [8], this_year=False)
-    user = cr.get_user(8)
-    for course in cr.get_courses(enrollment_type="teacher"):
-        print(f"{course.id} {course.name}")
-    print(f"{len(courses)} courses for {user} as teacher")
+    word2quiz_cmd()
