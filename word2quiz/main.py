@@ -1,4 +1,4 @@
-"""main module of word2quiz"""
+""" main module of word2quiz """
 import re
 import os
 from os.path import exists
@@ -15,12 +15,14 @@ from rich.console import Console
 from rich.prompt import Prompt, IntPrompt
 from rich.table import Table
 
-import canvasrobot
+from canvasrobot import CanvasRobot
 
-canvasrobot.model.start_month = 9  # change start month academic year
+
+#canvasrobot.model.start_month = 9  # change start month academic year
+cr = CanvasRobot()
 
 _ = gettext.gettext
-console = Console(force_terminal=True)  # too trick Pycharm console into show textattributes
+console = Console(force_terminal=True)  # to trick Pycharm console into show textattributes
 cur_dir = os.getcwd()
 
 
@@ -41,10 +43,6 @@ class IncorrectAnswerMarking(Error):
     pass
 
 
-# from docx import Document  # package - python-docx !
-# import docx2python as d2p
-# from xdocmodel import iter_paragraphs
-
 def normalize_size(text: str, size: int):
     parser = etree.XMLParser()
     try:  # can be html or not
@@ -64,6 +62,8 @@ TITLE_SIZE = 24
 QA_SIZE = 12
 
 # the patterns
+comment_pattern = \
+    re.compile(r"^#(?P<text>.*)")
 title_pattern = \
     re.compile(r"^<font size=\"(?P<fontsize>\d+)\"><u>(?P<text>.*)</u></font>")
 title_style_pattern = \
@@ -109,6 +109,7 @@ class Rule:
 
 
 rules = [
+    Rule(name='comment', pattern=comment_pattern, type='Comment'),
     Rule(name='title', pattern=title_pattern, type='Title'),
     Rule(name='title_style', pattern=title_style_pattern, type='Title'),
     Rule(name='quiz_name', pattern=quiz_name_pattern, type='Quizname'),
@@ -127,7 +128,7 @@ def get_document_html(filename: str, normalized_fontsize: int = 0):
     """
         :param normalized_fontsize: 0 is no normalization
         :param  filename: filename of the Word docx to parse
-        :returns the first X paragraphs as HTML
+        :returns tuple of the first X paragraphs as HTML, not_recognized paras
     """
     #  from docx produce a text with minimal HTML formatting tags b,i, font size
     #  1) questiontitle
@@ -152,59 +153,10 @@ def get_document_html(filename: str, normalized_fontsize: int = 0):
             continue
         question_nr, weight, text, p_type = parse(par, normalized_fontsize)
         print(f"{par} = {p_type} {weight}")
+        # type can also be 'Comment' which we ignore
         if p_type == 'Not recognized':
             not_recognized.append(par)
             continue
-
-        if p_type == 'Quizname':
-            quiz_name = text
-            par_list.append((p_type, None, text, par))
-        if last_p_type == 'Answer' and p_type in ('Question', 'Quizname'):  # last answer
-            break
-        if p_type == 'Answer':
-            # answers.append(Answer(answer_html=text, answer_weight=weight))
-            par_list.append((p_type, weight, text, par))
-        if p_type == "Question":
-            par_list.append((p_type, None, text, par))
-
-        last_p_type = p_type
-
-    return par_list, not_recognized
-
-
-def get_document_html_old(filename: str, normalized_fontsize: int = 0):
-    """
-        :param normalized_fontsize: 0 is no normalization
-        :param  filename: filename of the Word docx to parse
-        :returns the first X paragraphs as HTML
-    """
-    #  from docx produce a text with minimal HTML formatting tags b,i, font size
-    #  1) questiontitle
-    #    a) wrong answer
-    #    b) !right answer
-    doc = d2p.docx2python(filename, html=True)
-    # print(doc.body)
-    section_nr = 0  # state machine
-
-    #  the Word text contains one or more sections
-    #  quiz_name (multiple)
-    #    questions (5) starting with number 1
-    #       answers (4)
-    # we save the question list into the result list when we detect new question 1
-    last_p_type = None
-    par_list = []
-    not_recognized = []
-    # stop after the first question
-    for par in d2p.iterators.iter_paragraphs(doc.body):
-        par = par.strip()
-        if not par:
-            continue
-        question_nr, weight, text, p_type = parse(par, normalized_fontsize)
-        print(f"{par} = {p_type} {weight}")
-        if p_type == 'Not recognized':
-            not_recognized.append(par)
-            continue
-
         if p_type == 'Quizname':
             quiz_name = text
             par_list.append((p_type, None, text, par))
@@ -278,6 +230,7 @@ def parse_document_d2p(filename: str, check_num_questions: int, normalize_fontsi
     doc = d2p.docx2python(filename, html=True)
     # print(doc.body)
     section_nr = 0  # state machine
+    total_nr_questions = 0
     last_p_type = None
     quiz_name = None
     not_recognized = []
@@ -324,11 +277,7 @@ def parse_document_d2p(filename: str, check_num_questions: int, normalize_fontsi
     result.append((quiz_name, question_list))
     for question_list in result:
         nr_questions = len(question_list[1])
-        if check_num_questions:
-            if nr_questions != check_num_questions:
-                raise IncorrectNumberofQuestions(f"Questionlist {question_list[0]} has "
-                                                 f"{nr_questions} questions "
-                                                 f"this should be {check_num_questions} questions")
+        total_nr_questions += nr_questions
         for questions in question_list[1]:
             assert len(questions[1]) == 4, f"{questions[0]} only {len(questions[1])} of 4 answers"
             tot_weight = 0
@@ -337,6 +286,12 @@ def parse_document_d2p(filename: str, check_num_questions: int, normalize_fontsi
             if tot_weight != FULL_SCORE:
                 raise IncorrectAnswerMarking(f"Check right/wrong marking and weights in "
                                              f"Q '{questions[0]}'\n Ans {questions[1]}")
+
+    if check_num_questions:
+        if total_nr_questions != check_num_questions:
+            raise IncorrectNumberofQuestions(f"Questionlist {question_list[0]} has "
+                                             f"{nr_questions} questions "
+                                             f"this should be {check_num_questions} questions")
 
     logging.debug('--- not recognized:' if not_recognized else
                   '--- all lines were recognized ---')
@@ -352,72 +307,96 @@ def word2quiz(filename: str,
               normalize_fontsize=False,
               testrun=False):
     """
+    open _filename_ , parse the content into quizzes with questions and answers, optionally change their
+    fontsizes
+    :return tuple stats, quiz_data or None, not_recognized
     """
-    os.chdir('../data')
-    logging.debug(f"We are in folder {os.getcwd()}")
-    quiz_data, not_recognized_lines = parse_document_d2p(filename=filename,
+    quiz_data, lines_not_recognized = parse_document_d2p(filename=filename,
                                                          check_num_questions=check_num_questions,
                                                          normalize_fontsize=normalize_fontsize)
     if testrun:
-        return quiz_data, not_recognized_lines
+        return None, quiz_data, not_recognized_lines
 
-    if len(not_recognized_lines) > 0:
-        return quiz_data, not_recognized_lines
-    canvasrobot = canvasrobot.CanvasRobot()
-    result, stats = canvasrobot.create_quizzes_from_data(course_id=course_id,
-                                                         data=quiz_data)
+    if len(lines_not_recognized) > 0:
+        return None, quiz_data, lines_not_recognized
 
-    return stats
+    stats = cr.create_quizzes_from_data(course_id=course_id,
+                                        data=quiz_data)
+
+    return stats, None, None
 
 
 def word2quiz_cmd(docx_path="../data/"):
+    """
+    :param docx_path    file path to look for Word docs
+    command-line version of Word2Quiz which:
+    - uses an instance of CanvasRobot to logon in Canvas and get a list of courses
+      to choose from
+    - show a list of docx files from the _docx_path_ to enable to choose a quiz in Word format
+    - runs the word2quiz function """
+
+    logging.basicConfig(filename='word2quiz.log', encoding='utf-8', level=logging.DEBUG)
+    logging.debug("Starting")
+
     console = Console(force_terminal=True)  # to trick Pycharm console into showing textattributes
 
-    cr = canvasrobot.CanvasRobot()
-    print(f"Logged in as {cr.current_user.name}")
+    console.rule("Start")
+    console.print(f"Logged in as {cr.current_user.name}")
 
+    console.rule("Get course_id")
     courses = list(cr.get_courses(enrollment_type="teacher"))
     courses_ta = list(cr.get_courses(enrollment_type="ta"))
-
     courses += courses_ta
 
-    #for course in courses:
-    #    print(f"{course.id} - {course.name}")
-
     table = Table(title="You're teaching or assisting in the following courses")
-
     table.add_column("Course Id", justify="right", style="cyan", no_wrap=True)
     table.add_column("Title", style="magenta")
     for course in courses:
         table.add_row(str(course.id), course.name)
-
     console.print(table)
 
     course_ids = [str(c.id) for c in courses]
-    course_id = int(Prompt.ask(_("Enter your course_id"),
+    course_id = int(Prompt.ask(_("Enter the id of the course to receive the quiz"),
                                choices=course_ids,
                                show_choices=True))
 
+    console.rule("Get the filename of the Word doc")
     os.chdir(docx_path)
     filenames = glob.glob(f'*.docx')
+    filenames = filter(lambda item: item[0] != "~", filenames)
     filename = Prompt.ask(_("Enter filename"),
-                          choices=filenames,
+                          choices=list(filenames),
                           show_choices=True)
+    console.rule("Check the file")
+    num_questions = IntPrompt.ask("How many questions are in your Word file (total number)?")
 
-    num_questions = IntPrompt.ask("How many questions are in your Word file")
-
-    with console.status(_("Working..."), spinner="dots"):
+    with console.status(_("Working..."), spinner="dots") as status:
         try:
-            result = word2quiz(filename,
-                               course_id=course_id,
-                               check_num_questions=num_questions,
-                               testrun=False)
+            stats, quiz_data, lines_not_recognized = word2quiz(filename,
+                                                               course_id=course_id,
+                                                               check_num_questions=num_questions,
+                                                               testrun=False)
         except FileNotFoundError as e:
             console.print(f'\n[bold red]Error:[/] {e}')
+            quit()
         except (IncorrectNumberofQuestions, IncorrectAnswerMarking) as e:
             console.print(f'\n[bold red]Error:[/] {e}')
-        else:
-            rich_pprint(result)
+            quit()
+        status.update("Word document parsed, tried to create quiz")
+        if stats:
+            console.print(f"{len(stats.quiz_ids)} quiz(zes) created with "
+                          f"a total of {len(stats.question_ids)} questions")
+        if lines_not_recognized:
+            status.update("Quiz not created")
+            console.rule()
+            table = Table(title=f"Some lines in _{filename}_ were not recognized:")
+
+            table.add_column("Unrecognized lines", justify="left", style="red")
+            for line in lines_not_recognized:
+                table.add_row(line)
+
+            console.print(table)
+            console.print("Please edit or removed them, save & retry.")
 
 
 if __name__ == "__main__":

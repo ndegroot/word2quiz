@@ -1,28 +1,29 @@
 [tool.poetry]
 name = "word2quiz"
-version = "0.1.12"
-description = "Create quizzes in Canvas from simple Word docx files uaing Canvasapi. Not complete yet."
+version = "0.2.0"
+description = "Create quizzes in Canvas from simple Word docx files using CanvasRobot/Canvasapi"
 authors = ["Nico de Groot <ndegroot0@gmail.com>"]
 readme = "README.md"
-license = "MIT"
+license = ""
 homepage = "https://github.com/ndegroot/word2quiz"
 repository = "https://github.com/ndegroot/word2quiz"
-include = [
-    "LICENSE",
-]
+include = [ "LICENSE", ]
+
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.9,^3.10"
 python-docx = "^0.8.11"
 docx2python = "^2.0.4"
-attrs = "^21.4.0"
+attrs = "^22.1.0"
 requests = "^2.27.1"
 Pillow = "^9.1.0"
-canvasapi = "^2.2.0"
+canvasapi = "^3.0.0"
 keyring = "^23.6.0"
 rich = "^12.4.4"
+canvasrobot = "*"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2"
+pytest = "~=7.1.3"
+pylint = "*"
 
 [init_ui-system]
 requires = ["poetry-core>=1.0.0"]
