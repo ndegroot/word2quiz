@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "word2quiz"
-version = "0.2.0"
+version = "0.2.2"
 description = "Create quizzes in Canvas from simple Word docx files using CanvasRobot/Canvasapi"
 authors = ["Nico de Groot <ndegroot0@gmail.com>"]
 readme = "README.md"

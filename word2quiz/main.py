@@ -321,7 +321,8 @@ def word2quiz(filename: str,
         return None, quiz_data, lines_not_recognized
 
     stats = cr.create_quizzes_from_data(course_id=course_id,
-                                        data=quiz_data)
+                                        data=quiz_data,
+                                        question_format="Question {}.")
 
     return stats, None, None
 
